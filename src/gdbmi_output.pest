@@ -1,0 +1,35 @@
+output = {out_of_band_record*~result_record?~"(gdb)"~nl}
+result_record = {token?~"^"~result_class~(","~result)*~nl}
+out_of_band_record = {async_record|stream_record}
+async_record={exec_async_output|status_async_output|notify_async_output}
+exec_async_output = {token?~"*"~async_output~nl}
+status_async_output = {token?~"+"~async_output~nl}
+notify_async_output = {token?~"="~async_output~nl}
+async_output = {async_class ~ (","~result)*}
+result_class = {"done"|"running"|"connected"|"error"|"exit"}
+async_class = {"stopped"|_string}
+result = {variable~"="~value}
+variable = {_string}
+value = {const_val|tuple|list}
+const_val = {c_string}
+tuple = {"{}"|("{"~result~(","~result)*~"}")}
+list = {"[]"|("["~value~(","~value)*~"]")|("["~result~(","~result)*~"]")}
+stream_record = {console_stream_output|target_stream_output|log_stream_output}
+console_stream_output = {"~"~c_string~nl}
+target_stream_output = {"@"~c_string~nl}
+log_stream_output = {"&"~c_string~nl}
+_not_special_char = _{!("^"|"+"|"*"|"="|","|"\""|"{"|"}"|"["|"]"|"~"|"@"|"&")~ANY}
+_string = _{_not_special_char*}
+_octal = _{'0'..'7'}
+_digit = _{'0'..'9'}
+_hex = _{_digit|'a'..'f'|'A'..'F'}
+_hex_quad = _{_hex{4}}
+_hex_seq = _{_hex{1,}}
+_univarsal_char = _{("\\u"~_hex_quad) | ("\\U"~_hex_quad{2})}
+_simple_escape = _{"\\'"|"\\\""|"\\?"|"\\\\"|"\\a"|"\\b"|"\\f"|"\\n"|"\\r"|"\\t"|"\\v"}
+_octal_escape = _{"\\"~_octal{1,3}}
+_hex_escape = _{"\\x"~_hex_seq}
+_escape = _{_univarsal_char|_simple_escape|_octal_escape|_hex_escape}
+c_string = {"\""~(_escape|(!("\""|"\\"|"\n"|"\r")~ANY))*~"\""}
+token = {_digit+}
+nl = {" "*~("\r"|"\r\n"|"\n")}
